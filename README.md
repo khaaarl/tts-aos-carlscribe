@@ -1,6 +1,6 @@
 # tts-aos-carlscribe
 
-An army spawner/annotator for Age of Sigmar on Tabletop Simulator, inspired by Battlescribe2TTS/Yellowscribe.
+An army spawner/annotator for Age of Sigmar on Tabletop Simulator, inspired by Battlescribe2TTS/Yellowscribe. Very much an unfinished work in progress.
 
 ## How to Use In-Game in TTS
 
