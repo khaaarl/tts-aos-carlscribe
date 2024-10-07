@@ -1,0 +1,6 @@
+-- reporter = "html"
+-- reportfile = "luacov.report.html"
+
+modules = {
+   ["aos-carlscribe"] = "aos-carlscribe.lua",
+}

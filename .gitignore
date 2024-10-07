@@ -1,3 +1,5 @@
+luacov.*.out
+
 # Compiled Lua sources
 luac.out
 

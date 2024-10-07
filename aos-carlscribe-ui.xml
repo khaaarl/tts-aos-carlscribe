@@ -1,0 +1,7 @@
+<Panel width="800" height="200" rotation="0 0 180" position="0 0 -100">
+  <VerticalLayout>
+    <Text>Paste your army in text format (from New Recruit only ATM)</Text>
+    <InputField id="armyTextInput" onEndEdit="UpdatedTextInput"></InputField>
+    <Button id="generateButton" onClick="GenerateButtonClicked" interactable="true">Generate</Button>
+  </VerticalLayout>
+</Panel>
