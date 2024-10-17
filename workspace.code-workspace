@@ -11,7 +11,9 @@
 			"startLuaCoroutine",
 			"WebRequest",
 			"log",
-			"JSON"
+			"JSON",
+			"getObjectFromGUID",
+			"onSave"
 		]
 	}
 }

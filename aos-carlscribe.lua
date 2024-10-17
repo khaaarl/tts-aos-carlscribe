@@ -70,11 +70,14 @@ function SpawnArmy(armyText)
     local armyObjectInfos = PrepArmyObjects(
       armyText, factionInfo, nil, annotatedObjects)
     for _, item in ipairs(armyObjectInfos) do
-      local o = item.source.clone({ position = item.position })
-      o.setName(item.name)
-      o.setDescription(item.description)
-      o.setGMNotes(item.gmNotes)
-      o.setLuaScript(MINIFIED_MODEL_SCRIPT)
+      local o = getObjectFromGUID(item.sourceGuid)
+      if o then
+        o = o.clone({ position = item.position })
+        o.setName(item.name)
+        o.setDescription(item.description)
+        o.setGMNotes(item.gmNotes)
+        o.setLuaScript(MINIFIED_MODEL_SCRIPT)
+      end
     end
     --end)
   end)
@@ -85,7 +88,7 @@ function GetAnnotatedObjects()
   local relevantObjects = {}
   for _, o in ipairs(allObjects) do
     local objectInfo = {}
-    objectInfo.object = o
+    objectInfo.guid = o.getGUID()
     objectInfo.name = o.getName() or ""
     objectInfo.description = o.getDescription() or ""
     objectInfo.gmNotes = o.getGMNotes() or ""
@@ -141,7 +144,7 @@ function PrepArmyObjects(armyText, factionInfo, miscInfo, annotatedObjects)
         if #modelOptions > 0 then
           local item = {}
           local objectInfo = modelOptions[(mIx % #modelOptions) + 1]
-          item.source = objectInfo.object
+          item.sourceGuid = objectInfo.guid
           item.position = {
             diameter / 2.0 + (ix % 10) * diameter,
             3,
@@ -645,7 +648,6 @@ function PostLoadCoroutine()
   return 1
 end
 
----@diagnostic disable-next-line: lowercase-global
 function onSave()
   local state = {
     currentArmy = currentArmy,
@@ -654,7 +656,6 @@ function onSave()
   return JSON.encode(state)
 end
 
----@diagnostic disable-next-line: lowercase-global
 function onLoad(stateString)
   local state = JSON.decode(stateString or "{}")
   currentArmy = state.currentArmy
