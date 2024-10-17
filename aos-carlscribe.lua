@@ -36,6 +36,8 @@ local BSDATA_JSONS = {}
 -- From https://github.com/khaaarl/tts-wargaming-model-script and that repo needs to be adjacent to this repo.
 local MINIFIED_MODEL_SCRIPT = ""
 local thisObject = nil
+local currentArmyText = nil
+local currentArmy = nil
 
 function GetBSData(factionName, callback)
   if BSDATA_JSONS[factionName] and not BSDATA_CACHE[factionName] then
@@ -617,22 +619,46 @@ end
 
 -- UI and loading
 
+function SubmitButtonClicked()
+  if not thisObject then return end
+  if not (currentArmyText and #currentArmyText > 0) then return end
+  -- TODO
+  UpdateUI()
+end
+
 function GenerateButtonClicked()
   if not thisObject then return end
-  local armyText = (thisObject.UI.getAttribute("armyTextInput", "text") or "") .. ""
-  armyText = string.gsub(armyText, "\r\n", "\n")
-  if armyText and #armyText > 0 then
-    SpawnArmy(armyText)
+  if currentArmyText and #currentArmyText > 0 then
+    SpawnArmy(currentArmyText)
   end
+end
+
+function UpdateUI()
+  if not thisObject then return end
+  -- TODO
 end
 
 function PostLoadCoroutine()
   coroutine.yield(0)
   thisObject = self
+  UpdateUI()
   return 1
 end
 
+---@diagnostic disable-next-line: lowercase-global
+function onSave()
+  local state = {
+    currentArmy = currentArmy,
+    currentArmyText = currentArmyText
+  }
+  return JSON.encode(state)
+end
+
+---@diagnostic disable-next-line: lowercase-global
 function onLoad(stateString)
+  local state = JSON.decode(stateString or "{}")
+  currentArmy = state.currentArmy
+  currentArmyText = state.currentArmyText
   -- Be very slow here to handle weird TTS tick issues.
   Wait.frames(function()
     startLuaCoroutine(self, 'PostLoadCoroutine')
@@ -642,6 +668,9 @@ end
 function UpdatedTextInput(player, value, id)
   if thisObject then
     thisObject.UI.setAttribute(id, "text", value)
+    local armyText = (thisObject.UI.getAttribute("armyTextInput", "text") or "")
+    armyText = string.gsub(armyText, "\r\n", "\n")
+    currentArmyText = armyText
   end
 end
 
