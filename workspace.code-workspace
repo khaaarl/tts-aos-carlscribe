@@ -1,5 +1,9 @@
 {
-	"folders": [],
+	"folders": [
+		{
+			"path": "."
+		}
+	],
 	"settings": {
 		"Lua.runtime.version": "Lua 5.2",
 		"luahelper.format.indent_width": 2,

@@ -37,7 +37,7 @@ local BSDATA_JSONS = {}
 local MINIFIED_MODEL_SCRIPT = ""
 local thisObject = nil
 local currentArmyText = nil
-local currentArmy = nil
+local currentArmyUnits = nil
 
 function GetBSData(factionName, callback)
   if BSDATA_JSONS[factionName] and not BSDATA_CACHE[factionName] then
@@ -83,6 +83,18 @@ function SpawnArmy(armyText)
   end)
 end
 
+function SubmitArmytext(armyText)
+  local faction = GetArmyFaction(armyText)
+  if not faction or faction == "" then return end
+  GetBSData(faction, function(factionInfo)
+    --GetBSData("__misc__", function(miscInfo)
+    currentArmyUnits = GetArmyUnits(armyText, factionInfo, nil)
+    UpdateUI()
+    --end)
+  end)
+end
+
+
 function GetAnnotatedObjects()
   local allObjects = getObjects()
   local relevantObjects = {}
@@ -114,15 +126,7 @@ function PrepArmyObjects(armyText, factionInfo, miscInfo, annotatedObjects)
   local armyUnits = GetArmyUnits(armyText, factionInfo)
   local armyObjectInfos = {}
   local dz = 0
-  local unitNameCounts = {}
   for _, unit in ipairs(armyUnits) do
-    unitNameCounts[unit.warscroll.name] = (unitNameCounts[unit.warscroll.name] or 0) + 1
-  end
-  local unitNameCountIxs = {}
-  for _, unit in ipairs(armyUnits) do
-    unitNameCountIxs[unit.warscroll.name] = (unitNameCountIxs[unit.warscroll.name] or 0) + 1
-    local unitNameCount = unitNameCounts[unit.warscroll.name]
-    local unitNameCountIx = unitNameCountIxs[unit.warscroll.name]
     local unitId = RandomString(10)
     -- model name -> best matching object(s)
     local unitModels = {}
@@ -150,11 +154,7 @@ function PrepArmyObjects(armyText, factionInfo, miscInfo, annotatedObjects)
             3,
             diameter / 2.0 + dz + math.floor(ix / 10) * diameter
           }
-          local customName = nil
-          if unitNameCount > 1 then
-            customName = unit.warscroll.name .. " " .. string.char(string.byte("A") + unitNameCountIx - 1)
-          end
-          item.name = FinalModelName(modelName, unit.warscroll, customName)
+          item.name = FinalModelName(modelName, unit.warscroll, unit.customName)
           item.description = FinalModelDescription(unit.warscroll)
           item.gmNotes = 'UNIT_ID="' .. unitId .. '"\n' .. objectInfo.gmNotes
           table.insert(armyObjectInfos, item)
@@ -436,7 +436,7 @@ function GetBestMatchingObjects(modelName, annotatedObjects)
   return bestObjects
 end
 
-function GetArmyUnits(armyText, factionBSData)
+function GetArmyUnits(armyText, factionBSData, miscBSData)
   local warscrollNameToWarscroll = {}
   for _, warscroll in ipairs(factionBSData.units) do
     if not warscrollNameToWarscroll[warscroll.name] then
@@ -469,10 +469,10 @@ function GetArmyUnits(armyText, factionBSData)
     end
   end
   for _, unit in ipairs(units) do
-    local foundModel = false
     unit.annotatedModelCounts = {}
+    unit.numDistinctModels = 0
     for modelName, count in pairs(unit.warscroll.modelCounts) do
-      foundModel = true
+      unit.numDistinctModels = unit.numDistinctModels + 1
       local numChamps = 0
       local numMusicians = 0
       local numStandards = 0
@@ -515,10 +515,45 @@ function GetArmyUnits(armyText, factionBSData)
       unit.annotatedModelCounts[modelName] =
           count - (numChamps + numMusicians + numStandards)
     end
-    if not foundModel then
+    if unit.numDistinctModels < 1 then
       unit.annotatedModelCounts[unit.warscroll.name] = 1
+      unit.numDistinctModels = 1
     end
   end
+
+  -- Create names with A B C etc for repeat units and custom model names
+  local unitNameCounts = {}
+  for _, unit in ipairs(units) do
+    unitNameCounts[unit.warscroll.name] = (unitNameCounts[unit.warscroll.name] or 0) + 1
+  end
+  local unitNameCountIxs = {}
+  for _, unit in ipairs(units) do
+    unitNameCountIxs[unit.warscroll.name] = (unitNameCountIxs[unit.warscroll.name] or 0) + 1
+    local unitNameCount = unitNameCounts[unit.warscroll.name]
+    local unitNameCountIx = unitNameCountIxs[unit.warscroll.name]
+    unit.customName = unit.warscroll.name
+    if unitNameCount > 1 then
+      unit.customName = unit.customName .. " " .. string.char(string.byte("A") + unitNameCountIx - 1)
+    end
+    unit.customModelNames = {}
+    for k, _ in pairs(unit.annotatedModelCounts) do
+      local modelName = k
+      if string.find(modelName, "Champ$") then
+        modelName = unit.customName .. " Champion"
+      end
+      if string.find(modelName, "Music$") then
+        modelName = unit.customName .. " Musician"
+      end
+      if string.find(modelName, "Standard$") then
+        modelName = unit.customName .. " Standard Bearer"
+      end
+      if unit.numDistinctModels <= 1 then
+        modelName = unit.customName
+      end
+      unit.customModelNames[k] = modelName
+    end
+  end
+
   return units
 end
 
@@ -624,9 +659,9 @@ end
 
 function SubmitButtonClicked()
   if not thisObject then return end
+  UpdateInfoFromUI()
   if not (currentArmyText and #currentArmyText > 0) then return end
-  -- TODO
-  UpdateUI()
+  SubmitArmytext(currentArmyText)
 end
 
 function GenerateButtonClicked()
@@ -650,7 +685,7 @@ end
 
 function onSave()
   local state = {
-    currentArmy = currentArmy,
+    currentArmyUnits = currentArmyUnits,
     currentArmyText = currentArmyText
   }
   return JSON.encode(state)
@@ -658,7 +693,7 @@ end
 
 function onLoad(stateString)
   local state = JSON.decode(stateString or "{}")
-  currentArmy = state.currentArmy
+  currentArmyUnits = state.currentArmyUnits
   currentArmyText = state.currentArmyText
   -- Be very slow here to handle weird TTS tick issues.
   Wait.frames(function()
@@ -667,12 +702,16 @@ function onLoad(stateString)
 end
 
 function UpdatedTextInput(player, value, id)
-  if thisObject then
-    thisObject.UI.setAttribute(id, "text", value)
-    local armyText = (thisObject.UI.getAttribute("armyTextInput", "text") or "")
-    armyText = string.gsub(armyText, "\r\n", "\n")
-    currentArmyText = armyText
-  end
+  if not thisObject then return end
+  thisObject.UI.setAttribute(id, "text", value)
+  UpdateInfoFromUI()
+end
+
+function UpdateInfoFromUI()
+  if not thisObject then return end
+  local armyText = (thisObject.UI.getAttribute("armyTextInput", "text") or "")
+  armyText = string.gsub(armyText, "\r\n", "\n")
+  currentArmyText = armyText
 end
 
 -- Homegrown XML parsing library

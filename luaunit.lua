@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global, duplicate-set-field, cast-local-type, unbalanced-assignments, need-check-nil, param-type-mismatch, deprecated, redundant-parameter, undefined-field, lowercase-global, inject-field
 --[[
         luaunit.lua
 

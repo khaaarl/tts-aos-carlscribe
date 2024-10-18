@@ -1,3 +1,4 @@
+---@diagnostic disable: undefined-global
 local clock = os.clock
 
 -- Carlnote: yoinked from https://github.com/2dengine/profile.lua
