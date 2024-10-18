@@ -18,6 +18,10 @@
 			"JSON",
 			"getObjectFromGUID",
 			"onSave"
+		],
+		"Lua.workspace.ignoreDir": [
+			".vscode",
+			"luacov"
 		]
 	}
 }
