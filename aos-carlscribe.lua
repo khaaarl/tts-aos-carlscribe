@@ -151,7 +151,7 @@ function PrepArmyObjects(armyText, factionInfo, miscInfo, annotatedObjects)
           end
           item.name = FinalModelName(modelName, unit.warscroll, customName)
           item.description = FinalModelDescription(unit.warscroll)
-          item.gmNotes = 'UNIT_ID="' .. unitId .. '"\n' .. objectInfo.gmNotes
+          item.gmNotes = FinalModelGMNotes(unit.warscroll, unitId, objectInfo.gmNotes)
           table.insert(armyObjectInfos, item)
           ix = ix + 1
         end
@@ -160,6 +160,35 @@ function PrepArmyObjects(armyText, factionInfo, miscInfo, annotatedObjects)
     dz = dz + math.ceil(ix / 10) * diameter + 1
   end
   return armyObjectInfos
+end
+
+function FinalModelGMNotes(warscroll, unitId, originalGMNotes)
+  local output = { 'UNIT_ID="' .. unitId .. '"\n' }
+  local isHero = false
+  local isPriest = false
+  local isFleshEater = false
+  for _, keyword in ipairs(warscroll.keywords) do
+    if keyword == "HERO" then
+      isHero = true
+    end
+    if string.find(keyword, "PRIEST") then
+      isPriest = true
+    end
+    if string.find(keyword, "FLESH.*EATER") then
+      isFleshEater = true
+    end
+  end
+  if isFleshEater and isHero then
+    table.insert(output, "COUNTER:Noble Needs,7DCE7B,0,6")
+  end
+  if isPriest then
+    table.insert(output, "COUNTER:Ritual Points,ffffff")
+  end
+
+  if #(originalGMNotes or "") > 0 then
+    table.insert(output, originalGMNotes)
+  end
+  return table.concat(output, "\n")
 end
 
 function FinalModelName(modelName, unit, customName)
@@ -396,6 +425,7 @@ end
 
 function GetBestMatchingObjects(modelName, annotatedObjects)
   local modelNameRe = RegexOfString(modelName)
+  modelNameRe = string.gsub(modelNameRe, " ", "s? ")
   local trimmedModelName, trimmedModelNameRe = nil, nil
   if string.find(modelName, "Champ$") then
     trimmedModelName = string.sub(modelName, 1, #modelName - 6)
@@ -406,6 +436,7 @@ function GetBestMatchingObjects(modelName, annotatedObjects)
   end
   if trimmedModelName then
     trimmedModelNameRe = RegexOfString(trimmedModelName)
+    trimmedModelNameRe = string.gsub(trimmedModelNameRe, " ", "s? ")
   end
   local bestScore = 0
   local bestObjects = {}
