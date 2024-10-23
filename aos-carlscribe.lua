@@ -179,7 +179,7 @@ function FinalModelGMNotes(warscroll, unitId, originalGMNotes)
     end
   end
   if isFleshEater and isHero then
-    table.insert(output, "COUNTER:Noble Needs,7DCE7B,0,6")
+    table.insert(output, "COUNTER:Noble Deeds,7DCE7B,0,6")
   end
   if isPriest then
     table.insert(output, "COUNTER:Ritual Points,ffffff")
